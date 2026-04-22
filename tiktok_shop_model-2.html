@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TikTok Shop — Unit Economics Model</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Fraunces:ital,wght@0,300;0,400;0,500;1,300&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0D0D0F;--surface:#141416;--surface2:#1C1C20;--surface3:#232328;
+  --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.12);
+  --text:#F0EFE8;--muted:#7A7A7E;--dim:#4A4A50;
+  --teal:#3ECFAB;--teal-dim:rgba(62,207,171,0.12);--teal-mid:rgba(62,207,171,0.25);
+  --red:#F06B6B;--red-dim:rgba(240,107,107,0.12);
+  --amber:#F5A623;--amber-dim:rgba(245,166,35,0.12);
+  --blue:#5B9CF6;--blue-dim:rgba(91,156,246,0.12);--blue-mid:rgba(91,156,246,0.2);
+  --green:#6BCB82;--green-dim:rgba(107,203,130,0.12);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;min-height:100vh;line-height:1.6}
+header{border-bottom:1px solid var(--border);padding:28px 40px 24px;display:flex;align-items:flex-end;justify-content:space-between}
+.logo{font-family:'Fraunces',serif;font-size:22px;font-weight:300;letter-spacing:-0.01em}
+.logo em{font-style:italic;color:var(--teal)}
+.header-meta{font-size:11px;color:var(--dim);letter-spacing:.06em;text-transform:uppercase}
+.tab-nav{display:flex;gap:2px;padding:20px 40px 0;border-bottom:1px solid var(--border)}
+.tab-btn{font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;letter-spacing:.05em;text-transform:uppercase;padding:10px 20px 12px;background:none;border:none;border-bottom:2px solid transparent;color:var(--muted);cursor:pointer;transition:color .2s,border-color .2s;margin-bottom:-1px}
+.tab-btn:hover{color:var(--text)}
+.tab-btn.active{color:var(--teal);border-bottom-color:var(--teal)}
+.tab-panel{display:none}.tab-panel.active{display:block}
+.page{padding:32px 40px 60px}
+.two-col{display:grid;grid-template-columns:300px 1fr;gap:28px;align-items:start}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px 22px;margin-bottom:12px}
+.card:last-child{margin-bottom:0}
+.card-label{font-size:10px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin-bottom:14px}
+.irow{display:flex;align-items:center;gap:10px;margin-bottom:11px}
+.irow:last-child{margin-bottom:0}
+.irow label{font-size:13px;color:var(--muted);flex:1;min-width:0}
+.irow .val{font-family:'DM Mono',monospace;font-size:13px;color:var(--text);min-width:58px;text-align:right}
+input[type=range]{-webkit-appearance:none;appearance:none;flex:1.2;height:2px;background:var(--surface3);border-radius:2px;outline:none;cursor:pointer}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--teal);border:2px solid var(--bg);cursor:pointer;transition:transform .15s}
+input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.2)}
+input[type=number]{background:var(--surface2);border:1px solid var(--border2);border-radius:6px;color:var(--text);font-family:'DM Mono',monospace;font-size:13px;padding:5px 10px;width:88px;text-align:right;outline:none;transition:border-color .2s;-moz-appearance:textfield}
+input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+input[type=number]:focus{border-color:var(--teal)}
+.toggle-group{display:flex;background:var(--surface2);border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:8px}
+.toggle-btn{flex:1;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;padding:7px 10px;background:none;border:none;color:var(--muted);cursor:pointer;transition:background .15s,color .15s}
+.toggle-btn.active{background:var(--surface3);color:var(--teal)}
+.note-text{font-size:11px;color:var(--dim);line-height:1.5}
+.takehome-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.takehome-card{border-radius:10px;padding:14px 15px}
+.th-seller{background:var(--blue-dim);border:1px solid rgba(91,156,246,0.25)}
+.th-agency{background:var(--green-dim);border:1px solid rgba(107,203,130,0.22)}
+.th-label{font-size:10px;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px}
+.th-seller .th-label{color:var(--blue)}.th-agency .th-label{color:var(--green)}
+.th-val{font-family:'DM Mono',monospace;font-size:20px;font-weight:500}
+.th-seller .th-val{color:var(--blue)}.th-agency .th-val{color:var(--green)}
+.th-sub{font-size:11px;margin-top:3px}
+.th-seller .th-sub{color:rgba(91,156,246,0.55)}.th-agency .th-sub{color:rgba(107,203,130,0.55)}
+.wf-section-label{font-size:10px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin:18px 0 10px;display:flex;align-items:center;gap:10px}
+.wf-section-label::after{content:'';flex:1;height:1px;background:var(--border)}
+.wf-row{display:flex;align-items:center;gap:12px;margin-bottom:5px;min-height:40px}
+.wf-name{width:195px;min-width:195px}
+.wf-name-label{font-size:13px;color:var(--muted)}
+.wf-name-label.strong{color:var(--text);font-weight:500}
+.wf-name-sub{font-size:10px;color:var(--dim);margin-top:1px}
+.wf-bar-area{flex:1;height:32px;display:flex;align-items:center}
+.wf-bar{height:28px;border-radius:5px;display:flex;align-items:center;justify-content:flex-end;padding:0 10px;transition:width .35s cubic-bezier(.4,0,.2,1);min-width:6px}
+.wf-bar span{font-family:'DM Mono',monospace;font-size:12px;white-space:nowrap}
+.bar-price{background:rgba(62,207,171,0.14);border:1px solid rgba(62,207,171,0.32)}.bar-price span{color:var(--teal)}
+.bar-ded{background:var(--red-dim);border:1px solid rgba(240,107,107,0.25)}.bar-ded span{color:var(--red)}
+.bar-media{background:var(--amber-dim);border:1px solid rgba(245,166,35,0.28)}.bar-media span{color:var(--amber)}
+.bar-netpos{background:rgba(62,207,171,0.2);border:1px solid rgba(62,207,171,0.5)}.bar-netpos span{color:var(--teal)}
+.bar-netneg{background:var(--red-dim);border:1px solid rgba(240,107,107,0.4)}.bar-netneg span{color:var(--red)}
+.bar-seller{background:var(--blue-dim);border:1px solid rgba(91,156,246,0.32)}.bar-seller span{color:var(--blue)}
+.bar-agency{background:var(--green-dim);border:1px solid rgba(107,203,130,0.32)}.bar-agency span{color:var(--green)}
+.wf-split-bars{flex:1;display:flex;gap:3px;height:32px;align-items:center}
+.wf-split-bar{height:28px;border-radius:5px;display:flex;align-items:center;justify-content:center;transition:width .35s cubic-bezier(.4,0,.2,1);min-width:6px;overflow:hidden}
+.wf-split-bar span{font-family:'DM Mono',monospace;font-size:11px;white-space:nowrap;padding:0 8px}
+.metrics-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:24px}
+.metric-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 16px}
+.metric-card-label{font-size:10px;color:var(--dim);letter-spacing:.07em;text-transform:uppercase;margin-bottom:6px}
+.metric-card-val{font-family:'DM Mono',monospace;font-size:20px;font-weight:500}
+.pos{color:var(--teal)}.neg{color:var(--red)}.neu{color:var(--text)}
+.tag{display:inline-block;font-size:10px;font-family:'DM Sans',sans-serif;font-weight:500;padding:2px 7px;border-radius:4px;margin-left:6px;vertical-align:middle}
+.tag-ok{background:rgba(62,207,171,0.15);color:var(--teal)}
+.tag-warn{background:var(--amber-dim);color:var(--amber)}
+.tag-bad{background:var(--red-dim);color:var(--red)}
+.bundle-compare{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:16px}
+.compare-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px}
+.compare-card.highlight{border-color:rgba(62,207,171,0.38)}
+.compare-card-title{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px}
+.compare-row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:7px}
+.compare-row-label{font-size:12px;color:var(--muted)}
+.compare-row-val{font-family:'DM Mono',monospace;font-size:13px;color:var(--text)}
+.compare-divider{height:1px;background:var(--border);margin:10px 0}
+.delta-badge{font-size:11px;font-family:'DM Mono',monospace;padding:3px 8px;border-radius:4px}
+.delta-badge.up{background:rgba(62,207,171,0.15);color:var(--teal)}
+.delta-badge.down{background:var(--red-dim);color:var(--red)}
+footer{border-top:1px solid var(--border);padding:16px 40px;display:flex;justify-content:space-between}
+footer p{font-size:11px;color:var(--dim)}
+@media(max-width:860px){
+  header,.page,footer,.tab-nav{padding-left:20px;padding-right:20px}
+  .two-col{grid-template-columns:1fr}
+  .metrics-grid{grid-template-columns:1fr 1fr}
+  .bundle-compare{grid-template-columns:1fr}
+  .wf-name{width:140px;min-width:140px}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">TikTok Shop <em>/</em> Unit Economics</div>
+  <div class="header-meta" id="header-date"></div>
+</header>
+
+<nav class="tab-nav">
+  <button class="tab-btn active" onclick="switchTab('unit',this)">Unit economics</button>
+  <button class="tab-btn" onclick="switchTab('bundle',this)">Bundle offers</button>
+</nav>
+
+<!-- UNIT TAB -->
+<div id="tab-unit" class="tab-panel active">
+<div class="page"><div class="two-col">
+  <div>
+    <div class="card">
+      <div class="card-label">Product</div>
+      <div class="irow">
+        <label>Selling price</label>
+        <input type="range" id="u-asp" min="1" max="200" step="1" value="40" oninput="calcUnit()">
+        <span class="val" id="u-asp-v">$40</span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-label">Deductions</div>
+      <div class="irow">
+        <label>Shipping cost</label>
+        <input type="number" id="u-ship" min="0" max="100" step="0.01" value="4.50" oninput="calcUnit()" placeholder="0.00">
+      </div>
+      <div class="irow">
+        <label>TikTok platform fee</label>
+        <input type="range" id="u-tiktok" min="0" max="12" step="0.5" value="6" oninput="calcUnit()">
+        <span class="val" id="u-tiktok-v">6.0%</span>
+      </div>
+      <div class="irow">
+        <label>Affiliate commission</label>
+        <input type="range" id="u-aff" min="0" max="30" step="1" value="15" oninput="calcUnit()">
+        <span class="val" id="u-aff-v">15%</span>
+      </div>
+      <div class="irow">
+        <label>Seller discounts</label>
+        <input type="range" id="u-disc" min="0" max="30" step="1" value="5" oninput="calcUnit()">
+        <span class="val" id="u-disc-v">5%</span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-label">Revenue split</div>
+      <div class="irow">
+        <label>Agency share</label>
+        <input type="range" id="u-agency" min="0" max="100" step="1" value="20" oninput="calcUnit()">
+        <span class="val" id="u-agency-v">20%</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted)">
+        <span>Seller <strong style="color:var(--text)" id="u-seller-pct">80%</strong></span>
+        <span>Agency <strong style="color:var(--text)" id="u-agency-pct">20%</strong></span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-label">Paid media</div>
+      <div class="irow">
+        <label>Per-unit spend</label>
+        <input type="number" id="u-media" min="0" max="200" step="0.01" value="5.00" oninput="calcUnit()" placeholder="0.00">
+      </div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:8px">Deduct paid media:</div>
+      <div class="toggle-group">
+        <button class="toggle-btn active" id="u-btn-before" onclick="setUnitMedia('before')">Before split</button>
+        <button class="toggle-btn" id="u-btn-after" onclick="setUnitMedia('after')">After split</button>
+      </div>
+      <p class="note-text" id="u-media-note"></p>
+    </div>
+    <div class="card" style="border-color:rgba(91,156,246,0.2)">
+      <div class="card-label" style="color:var(--blue)">Take-home</div>
+      <div class="takehome-grid">
+        <div class="takehome-card th-seller">
+          <div class="th-label">Seller</div>
+          <div class="th-val" id="u-seller-net">—</div>
+          <div class="th-sub" id="u-seller-sub">—</div>
+        </div>
+        <div class="takehome-card th-agency">
+          <div class="th-label">Agency</div>
+          <div class="th-val" id="u-agency-net">—</div>
+          <div class="th-sub" id="u-agency-sub">—</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div>
+    <div style="font-family:'Fraunces',serif;font-size:16px;font-weight:300;margin-bottom:8px">Waterfall — per unit</div>
+    <div id="u-waterfall"></div>
+    <div class="metrics-grid">
+      <div class="metric-card"><div class="metric-card-label">Net profit (pre-split)</div><div class="metric-card-val" id="u-m-presplit">—</div></div>
+      <div class="metric-card"><div class="metric-card-label">Net margin</div><div class="metric-card-val" id="u-m-margin">—</div></div>
+      <div class="metric-card"><div class="metric-card-label">Total deductions</div><div class="metric-card-val neg" id="u-m-ded">—</div></div>
+    </div>
+  </div>
+</div></div>
+</div>
+
+<!-- BUNDLE TAB -->
+<div id="tab-bundle" class="tab-panel">
+<div class="page"><div class="two-col">
+  <div>
+    <div class="card">
+      <div class="card-label">Product A</div>
+      <div class="irow">
+        <label>Selling price</label>
+        <input type="range" id="b-asp-a" min="5" max="150" step="1" value="40" oninput="calcBundle()">
+        <span class="val" id="b-asp-a-v">$40</span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-label">Product B</div>
+      <div class="irow">
+        <label>Selling price</label>
+        <input type="range" id="b-asp-b" min="5" max="150" step="1" value="25" oninput="calcBundle()">
+        <span class="val" id="b-asp-b-v">$25</span>
+      </div>
+    </div>
+    <div class="card" style="border-color:rgba(62,207,171,0.3)">
+      <div class="card-label" style="color:var(--teal)">Bundle pricing</div>
+      <div class="irow">
+        <label>Bundle selling price</label>
+        <input type="number" id="b-bundle-price" min="1" max="500" step="0.01" value="58" oninput="calcBundle()">
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-top:6px">
+        <span>Combined individual</span>
+        <span style="font-family:'DM Mono',monospace" id="b-combined">—</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-top:4px">
+        <span>Bundle discount</span>
+        <span style="font-family:'DM Mono',monospace;color:var(--amber)" id="b-disc-pct">—</span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-label">Deductions</div>
+      <div class="irow">
+        <label>Shipping cost</label>
+        <input type="number" id="b-ship" min="0" max="100" step="0.01" value="5.50" oninput="calcBundle()" placeholder="0.00">
+      </div>
+      <div class="irow">
+        <label>TikTok platform fee</label>
+        <input type="range" id="b-tiktok" min="0" max="12" step="0.5" value="6" oninput="calcBundle()">
+        <span class="val" id="b-tiktok-v">6.0%</span>
+      </div>
+      <div class="irow">
+        <label>Affiliate commission</label>
+        <input type="range" id="b-aff" min="0" max="30" step="1" value="15" oninput="calcBundle()">
+        <span class="val" id="b-aff-v">15%</span>
+      </div>
+      <div class="irow">
+        <label>Seller discounts</label>
+        <input type="range" id="b-disc" min="0" max="30" step="1" value="5" oninput="calcBundle()">
+        <span class="val" id="b-disc-v">5%</span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-label">Revenue split</div>
+      <div class="irow">
+        <label>Agency share</label>
+        <input type="range" id="b-agency" min="0" max="100" step="1" value="20" oninput="calcBundle()">
+        <span class="val" id="b-agency-v">20%</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted)">
+        <span>Seller <strong style="color:var(--text)" id="b-seller-pct">80%</strong></span>
+        <span>Agency <strong style="color:var(--text)" id="b-agency-pct">20%</strong></span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-label">Paid media</div>
+      <div class="irow">
+        <label>Per-bundle spend</label>
+        <input type="number" id="b-media" min="0" max="200" step="0.01" value="5.00" oninput="calcBundle()" placeholder="0.00">
+      </div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:8px">Deduct paid media:</div>
+      <div class="toggle-group">
+        <button class="toggle-btn active" id="b-btn-before" onclick="setBundleMedia('before')">Before split</button>
+        <button class="toggle-btn" id="b-btn-after" onclick="setBundleMedia('after')">After split</button>
+      </div>
+      <p class="note-text" id="b-media-note"></p>
+    </div>
+    <div class="card" style="border-color:rgba(91,156,246,0.2)">
+      <div class="card-label" style="color:var(--blue)">Take-home</div>
+      <div class="takehome-grid">
+        <div class="takehome-card th-seller">
+          <div class="th-label">Seller</div>
+          <div class="th-val" id="b-seller-net">—</div>
+          <div class="th-sub" id="b-seller-sub">—</div>
+        </div>
+        <div class="takehome-card th-agency">
+          <div class="th-label">Agency</div>
+          <div class="th-val" id="b-agency-net">—</div>
+          <div class="th-sub" id="b-agency-sub">—</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div>
+    <div style="font-family:'Fraunces',serif;font-size:16px;font-weight:300;margin-bottom:8px">Waterfall — bundle</div>
+    <div id="b-waterfall"></div>
+    <div class="wf-section-label" style="margin-top:28px">Bundle vs. individual comparison</div>
+    <div class="bundle-compare" id="b-compare"></div>
+  </div>
+</div></div>
+</div>
+
+<footer>
+  <p>TikTok Shop Unit Economics · Per unit / per bundle · Internal use only</p>
+  <p id="footer-date"></p>
+</footer>
+
+<script>
+const g=id=>document.getElementById(id);
+const fmt=n=>(n<0?'−$':'$')+Math.abs(n).toFixed(2);
+const fmtpct=n=>n.toFixed(1)+'%';
+
+document.getElementById('header-date').textContent=new Date().toLocaleDateString('en-US',{month:'long',year:'numeric'});
+document.getElementById('footer-date').textContent=new Date().toLocaleDateString('en-US',{month:'long',year:'numeric'});
+
+function switchTab(name,btn){
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  g('tab-'+name).classList.add('active');btn.classList.add('active');
+}
+
+function wfBar(label,sub,amount,cls,barPct,prefix,strong){
+  const w=Math.max(1,Math.min(100,barPct)).toFixed(1);
+  return `<div class="wf-row">
+    <div class="wf-name">
+      <div class="wf-name-label${strong?' strong':''}">${prefix||''}${label}</div>
+      ${sub?`<div class="wf-name-sub">${sub}</div>`:''}
+    </div>
+    <div class="wf-bar-area"><div class="wf-bar ${cls}" style="width:${w}%"><span>${fmt(Math.abs(amount))}</span></div></div>
+  </div>`;
+}
+
+function wfSplit(label,sub,selAmt,agAmt,maxVal){
+  const sw=Math.max(1,(Math.abs(selAmt)/maxVal*100)).toFixed(1);
+  const aw=Math.max(1,(Math.abs(agAmt)/maxVal*100)).toFixed(1);
+  return `<div class="wf-row">
+    <div class="wf-name"><div class="wf-name-label strong">${label}</div>${sub?`<div class="wf-name-sub">${sub}</div>`:''}</div>
+    <div class="wf-split-bars">
+      <div class="wf-split-bar" style="width:${sw}%;background:var(--blue-dim);border:1px solid rgba(91,156,246,0.3)"><span style="color:var(--blue)">${fmt(Math.abs(selAmt))}</span></div>
+      <div class="wf-split-bar" style="width:${aw}%;background:var(--green-dim);border:1px solid rgba(107,203,130,0.3)"><span style="color:var(--green)">${fmt(Math.abs(agAmt))}</span></div>
+    </div>
+  </div>`;
+}
+
+function wfSep(label){return`<div class="wf-section-label">${label}</div>`;}
+
+function mTag(m){
+  if(m>=40)return'<span class="tag tag-ok">healthy</span>';
+  if(m>=15)return'<span class="tag tag-warn">thin</span>';
+  return'<span class="tag tag-bad">at risk</span>';
+}
+
+function buildWaterfall(asp,ship,tikPct,affPct,discPct,media,agPct,mediaTiming,labelSub){
+  const selPct=1-agPct;
+  const tikFee=asp*tikPct,affFee=asp*affPct,discAmt=asp*discPct;
+  const totalDed=ship+tikFee+affFee+discAmt;
+  const netPre=asp-totalDed;
+  const maxVal=Math.max(asp,1);
+  const bp=v=>Math.max(1,(Math.abs(v)/maxVal)*100);
+  const sL=Math.round(selPct*100)+'%',aL=Math.round(agPct*100)+'%';
+
+  let selSplit,agSplit,selTH,agTH;
+  if(mediaTiming==='before'){
+    const pool=netPre-media;
+    selSplit=pool*selPct;agSplit=pool*agPct;
+    selTH=selSplit;agTH=agSplit;
+  }else{
+    selSplit=netPre*selPct;agSplit=netPre*agPct;
+    selTH=selSplit;agTH=agSplit-media;
+  }
+
+  let html='';
+  html+=wfBar('Selling price',labelSub,asp,'bar-price',bp(asp),'',true);
+  html+=wfSep('deductions');
+  html+=wfBar('Shipping','fulfillment cost',ship,'bar-ded',bp(ship),'− ');
+  html+=wfBar('TikTok platform fee',fmtpct(tikPct*100)+' of selling price',tikFee,'bar-ded',bp(tikFee),'− ');
+  html+=wfBar('Affiliate commission',fmtpct(affPct*100)+' of selling price',affFee,'bar-ded',bp(affFee),'− ');
+  html+=wfBar('Seller discounts',fmtpct(discPct*100)+' of selling price',discAmt,'bar-ded',bp(discAmt),'− ');
+
+  if(mediaTiming==='before'){
+    html+=wfSep('paid media — before split');
+    html+=wfBar('Paid media','deducted before revenue split',media,'bar-media',bp(media),'− ');
+    const pool=netPre-media;
+    html+=wfSep('net profit — pre-split');
+    html+=wfBar('Net profit','after media, before split',Math.abs(pool),pool>=0?'bar-netpos':'bar-netneg',bp(Math.abs(pool)),pool<0?'− ':'',true);
+    html+=wfSep(`revenue split — seller ${sL} · agency ${aL}`);
+    html+=wfSplit('Split',`${sL} seller · ${aL} agency`,selSplit,agSplit,maxVal);
+  }else{
+    html+=wfSep('net profit — pre-split');
+    html+=wfBar('Net profit','before revenue split',Math.abs(netPre),netPre>=0?'bar-netpos':'bar-netneg',bp(Math.abs(netPre)),netPre<0?'− ':'',true);
+    html+=wfSep(`revenue split — seller ${sL} · agency ${aL}`);
+    html+=wfSplit('Split',`${sL} seller · ${aL} agency`,selSplit,agSplit,maxVal);
+    html+=wfSep('paid media — from agency share');
+    html+=wfBar('Paid media','deducted from agency share only',media,'bar-media',bp(media),'− ');
+  }
+
+  html+=wfSep('take-home');
+  html+=wfBar('Seller take-home',sL+' share'+(mediaTiming==='before'?' (pool after media)':' · unaffected by media'),Math.abs(selTH),'bar-seller',bp(Math.abs(selTH)),selTH<0?'− ':'',true);
+  html+=wfBar('Agency take-home',aL+' share'+(mediaTiming==='after'?' minus paid media':''),Math.abs(agTH),'bar-agency',bp(Math.abs(agTH)),agTH<0?'− ':'',true);
+
+  return{html,totalDed,netPre,selTH,agTH};
+}
+
+/* UNIT */
+let unitMediaTiming='before';
+function setUnitMedia(t){
+  unitMediaTiming=t;
+  g('u-btn-before').className='toggle-btn'+(t==='before'?' active':'');
+  g('u-btn-after').className='toggle-btn'+(t==='after'?' active':'');
+  calcUnit();
+}
+
+function calcUnit(){
+  const asp=+g('u-asp').value;
+  const ship=Math.max(0,parseFloat(g('u-ship').value)||0);
+  const tikPct=+g('u-tiktok').value/100;
+  const affPct=+g('u-aff').value/100;
+  const discPct=+g('u-disc').value/100;
+  const media=Math.max(0,parseFloat(g('u-media').value)||0);
+  const agPct=+g('u-agency').value/100;
+  const selPct=1-agPct;
+
+  g('u-asp-v').textContent='$'+asp;
+  g('u-tiktok-v').textContent=(+g('u-tiktok').value).toFixed(1)+'%';
+  g('u-aff-v').textContent=(+g('u-aff').value)+'%';
+  g('u-disc-v').textContent=(+g('u-disc').value)+'%';
+  g('u-agency-v').textContent=Math.round(agPct*100)+'%';
+  g('u-seller-pct').textContent=Math.round(selPct*100)+'%';
+  g('u-agency-pct').textContent=Math.round(agPct*100)+'%';
+  g('u-media-note').textContent=unitMediaTiming==='before'
+    ?'Paid media is deducted from the pool before splitting between seller and agency.'
+    :'Net is split first, then paid media is deducted from the agency\'s share only.';
+
+  const r=buildWaterfall(asp,ship,tikPct,affPct,discPct,media,agPct,unitMediaTiming,'revenue per unit');
+  g('u-waterfall').innerHTML=r.html;
+  g('u-seller-net').textContent=fmt(r.selTH);
+  g('u-agency-net').textContent=fmt(r.agTH);
+  g('u-seller-sub').textContent=Math.round(selPct*100)+'% of split';
+  g('u-agency-sub').textContent=unitMediaTiming==='after'?'after $'+media.toFixed(2)+' media':Math.round(agPct*100)+'% of split';
+
+  const margin=r.netPre/asp*100;
+  g('u-m-presplit').textContent=fmt(r.netPre);
+  g('u-m-presplit').className='metric-card-val '+(r.netPre>=0?'pos':'neg');
+  g('u-m-margin').innerHTML=fmtpct(margin)+mTag(margin);
+  g('u-m-margin').className='metric-card-val '+(margin>=40?'pos':margin>=15?'neu':'neg');
+  g('u-m-ded').textContent=fmt(r.totalDed);
+}
+
+/* BUNDLE */
+let bundleMediaTiming='before';
+function setBundleMedia(t){
+  bundleMediaTiming=t;
+  g('b-btn-before').className='toggle-btn'+(t==='before'?' active':'');
+  g('b-btn-after').className='toggle-btn'+(t==='after'?' active':'');
+  calcBundle();
+}
+
+function calcBundle(){
+  const aspA=+g('b-asp-a').value;
+  const aspB=+g('b-asp-b').value;
+  const bPrice=Math.max(0.01,parseFloat(g('b-bundle-price').value)||58);
+  const ship=Math.max(0,parseFloat(g('b-ship').value)||0);
+  const tikPct=+g('b-tiktok').value/100;
+  const affPct=+g('b-aff').value/100;
+  const discPct=+g('b-disc').value/100;
+  const media=Math.max(0,parseFloat(g('b-media').value)||0);
+  const agPct=+g('b-agency').value/100;
+  const selPct=1-agPct;
+
+  g('b-asp-a-v').textContent='$'+aspA;
+  g('b-asp-b-v').textContent='$'+aspB;
+  g('b-tiktok-v').textContent=(+g('b-tiktok').value).toFixed(1)+'%';
+  g('b-aff-v').textContent=(+g('b-aff').value)+'%';
+  g('b-disc-v').textContent=(+g('b-disc').value)+'%';
+  g('b-agency-v').textContent=Math.round(agPct*100)+'%';
+  g('b-seller-pct').textContent=Math.round(selPct*100)+'%';
+  g('b-agency-pct').textContent=Math.round(agPct*100)+'%';
+
+  const combined=aspA+aspB;
+  const dg=combined>0?((combined-bPrice)/combined)*100:0;
+  g('b-combined').textContent='$'+combined.toFixed(2);
+  g('b-disc-pct').textContent=(dg>=0?'−':'+')+Math.abs(dg).toFixed(1)+'%';
+  g('b-media-note').textContent=bundleMediaTiming==='before'
+    ?'Paid media is deducted from the pool before splitting between seller and agency.'
+    :'Net is split first, then paid media is deducted from the agency\'s share only.';
+
+  const lbl=`A $${aspA} + B $${aspB} → bundle $${bPrice.toFixed(2)}`;
+  const r=buildWaterfall(bPrice,ship,tikPct,affPct,discPct,media,agPct,bundleMediaTiming,lbl);
+  g('b-waterfall').innerHTML=r.html;
+  g('b-seller-net').textContent=fmt(r.selTH);
+  g('b-agency-net').textContent=fmt(r.agTH);
+  g('b-seller-sub').textContent=Math.round(selPct*100)+'% of split';
+  g('b-agency-sub').textContent=bundleMediaTiming==='after'?'after $'+media.toFixed(2)+' media':Math.round(agPct*100)+'% of split';
+
+  /* comparison vs unit tab */
+  const uAsp=+g('u-asp').value;
+  const uShip=Math.max(0,parseFloat(g('u-ship').value)||0);
+  const uTik=+g('u-tiktok').value/100,uAff=+g('u-aff').value/100,uDisc=+g('u-disc').value/100;
+  const uMedia=Math.max(0,parseFloat(g('u-media').value)||0);
+  const uAgPct=+g('u-agency').value/100,uSelPct=1-uAgPct;
+  const uDed=uShip+uAsp*uTik+uAsp*uAff+uAsp*uDisc;
+  const uNet=uAsp-uDed;
+  let uSelTH,uAgTH;
+  if(unitMediaTiming==='before'){const p=uNet-uMedia;uSelTH=p*uSelPct;uAgTH=p*uAgPct;}
+  else{uSelTH=uNet*uSelPct;uAgTH=uNet*uAgPct-uMedia;}
+  const uMarg=uNet/uAsp*100,bMarg=r.netPre/bPrice*100;
+
+  const db=(val,unit)=>{
+    const dir=val>=0?'up':'down',s=val>=0?'+':'';
+    return`<span class="delta-badge ${dir}">${s}${unit==='$'?fmt(val):val.toFixed(1)+'%'}</span>`;
+  };
+
+  g('b-compare').innerHTML=`
+    <div class="compare-card">
+      <div class="compare-card-title">Individual (unit tab)</div>
+      <div class="compare-row"><span class="compare-row-label">Selling price</span><span class="compare-row-val">$${uAsp.toFixed(2)}</span></div>
+      <div class="compare-row"><span class="compare-row-label">Total deductions</span><span class="compare-row-val neg">$${uDed.toFixed(2)}</span></div>
+      <div class="compare-row"><span class="compare-row-label">Net profit</span><span class="compare-row-val ${uNet>=0?'pos':'neg'}">$${uNet.toFixed(2)}</span></div>
+      <div class="compare-divider"></div>
+      <div class="compare-row"><span class="compare-row-label">Seller take-home</span><span class="compare-row-val" style="color:var(--blue)">$${uSelTH.toFixed(2)}</span></div>
+      <div class="compare-row"><span class="compare-row-label">Agency take-home</span><span class="compare-row-val" style="color:var(--green)">$${uAgTH.toFixed(2)}</span></div>
+      <div class="compare-row"><span class="compare-row-label">Net margin</span><span class="compare-row-val ${uMarg>=40?'pos':uMarg>=15?'neu':'neg'}">${fmtpct(uMarg)}</span></div>
+    </div>
+    <div class="compare-card highlight">
+      <div class="compare-card-title" style="color:var(--teal)">Bundle (A + B)</div>
+      <div class="compare-row"><span class="compare-row-label">Bundle price</span><span class="compare-row-val" style="color:var(--teal)">$${bPrice.toFixed(2)}</span></div>
+      <div class="compare-row"><span class="compare-row-label">Total deductions</span><span class="compare-row-val neg">$${r.totalDed.toFixed(2)}</span></div>
+      <div class="compare-row"><span class="compare-row-label">Net profit</span><span class="compare-row-val ${r.netPre>=0?'pos':'neg'}">$${r.netPre.toFixed(2)}</span></div>
+      <div class="compare-divider"></div>
+      <div class="compare-row"><span class="compare-row-label">Seller take-home</span><span class="compare-row-val" style="color:var(--blue)">$${r.selTH.toFixed(2)}</span></div>
+      <div class="compare-row"><span class="compare-row-label">Agency take-home</span><span class="compare-row-val" style="color:var(--green)">$${r.agTH.toFixed(2)}</span></div>
+      <div class="compare-row"><span class="compare-row-label">Net margin</span><span class="compare-row-val ${bMarg>=40?'pos':bMarg>=15?'neu':'neg'}">${fmtpct(bMarg)}</span></div>
+    </div>
+    <div class="compare-card">
+      <div class="compare-card-title">Delta</div>
+      <div class="compare-row"><span class="compare-row-label">Price</span>${db(bPrice-uAsp,'$')}</div>
+      <div class="compare-row"><span class="compare-row-label">Deductions</span>${db(r.totalDed-uDed,'$')}</div>
+      <div class="compare-row"><span class="compare-row-label">Net profit</span>${db(r.netPre-uNet,'$')}</div>
+      <div class="compare-divider"></div>
+      <div class="compare-row"><span class="compare-row-label">Seller take-home</span>${db(r.selTH-uSelTH,'$')}</div>
+      <div class="compare-row"><span class="compare-row-label">Agency take-home</span>${db(r.agTH-uAgTH,'$')}</div>
+      <div class="compare-row"><span class="compare-row-label">Net margin</span>${db(bMarg-uMarg,'%')}</div>
+    </div>`;
+}
+
+calcUnit();calcBundle();
+</script>
+</body>
+</html>
