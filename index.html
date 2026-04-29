@@ -197,10 +197,11 @@ footer p{font-size:11px;color:var(--dim)}
   <div>
     <div style="font-family:'Fraunces',serif;font-size:16px;font-weight:300;margin-bottom:8px">Waterfall — per unit</div>
     <div id="u-waterfall"></div>
-    <div class="metrics-grid">
-      <div class="metric-card"><div class="metric-card-label">Net profit (pre-split)</div><div class="metric-card-val" id="u-m-presplit">—</div></div>
-      <div class="metric-card"><div class="metric-card-label">Net margin</div><div class="metric-card-val" id="u-m-margin">—</div></div>
-      <div class="metric-card"><div class="metric-card-label">Total deductions</div><div class="metric-card-val neg" id="u-m-ded">—</div></div>
+    <div class="metrics-grid" style="grid-template-columns:repeat(4,1fr)">
+      <div class="metric-card"><div class="metric-card-label">Net profit</div><div class="metric-card-val" id="u-m-presplit">—</div><div style="font-size:10px;color:var(--dim);margin-top:4px" id="u-m-presplit-sub">incl. media when before split</div></div>
+      <div class="metric-card"><div class="metric-card-label">Net margin</div><div class="metric-card-val" id="u-m-margin">—</div><div style="font-size:10px;color:var(--dim);margin-top:4px" id="u-m-margin-sub">net profit / selling price</div></div>
+      <div class="metric-card" style="border-color:rgba(107,203,130,0.25)"><div class="metric-card-label" style="color:var(--green)">Agency profit</div><div class="metric-card-val" id="u-m-ag-profit">—</div><div style="font-size:10px;color:var(--dim);margin-top:4px">agency take-home</div></div>
+      <div class="metric-card" style="border-color:rgba(107,203,130,0.25)"><div class="metric-card-label" style="color:var(--green)">Agency margin</div><div class="metric-card-val" id="u-m-ag-margin">—</div><div style="font-size:10px;color:var(--dim);margin-top:4px">agency profit / selling price</div></div>
     </div>
   </div>
 </div></div>
@@ -451,12 +452,22 @@ function calcUnit(){
   g('u-seller-sub').textContent=Math.round(selPct*100)+'% of split';
   g('u-agency-sub').textContent=unitMediaTiming==='after'?'after $'+media.toFixed(2)+' media':Math.round(agPct*100)+'% of split';
 
-  const margin=r.netPre/asp*100;
-  g('u-m-presplit').textContent=fmt(r.netPre);
-  g('u-m-presplit').className='metric-card-val '+(r.netPre>=0?'pos':'neg');
-  g('u-m-margin').innerHTML=fmtpct(margin)+mTag(margin);
-  g('u-m-margin').className='metric-card-val '+(margin>=40?'pos':margin>=15?'neu':'neg');
-  g('u-m-ded').textContent=fmt(r.totalDed);
+  const netProfit = unitMediaTiming === 'before' ? r.netPre - media : r.netPre;
+  const netMargin = netProfit / asp * 100;
+  // Agency profit = agency take-home (always reactive to toggle)
+  const agProfit  = r.agTH;
+  const agMargin  = agProfit / asp * 100;
+
+  g('u-m-presplit-sub').textContent = unitMediaTiming === 'before' ? 'incl. paid media (before split)' : 'excl. paid media (agency only)';
+
+  g('u-m-presplit').textContent = fmt(netProfit);
+  g('u-m-presplit').className   = 'metric-card-val '+(netProfit>=0?'pos':'neg');
+  g('u-m-margin').innerHTML     = fmtpct(netMargin)+mTag(netMargin);
+  g('u-m-margin').className     = 'metric-card-val '+(netMargin>=40?'pos':netMargin>=15?'neu':'neg');
+  g('u-m-ag-profit').textContent= fmt(agProfit);
+  g('u-m-ag-profit').className  = 'metric-card-val '+(agProfit>=0?'pos':'neg');
+  g('u-m-ag-margin').innerHTML  = fmtpct(agMargin)+mTag(agMargin);
+  g('u-m-ag-margin').className  = 'metric-card-val '+(agMargin>=40?'pos':agMargin>=15?'neu':'neg');
 }
 
 /* BUNDLE */
@@ -516,43 +527,45 @@ function calcBundle(){
   let uSelTH,uAgTH;
   if(unitMediaTiming==='before'){const p=uNet-uMedia;uSelTH=p*uSelPct;uAgTH=p*uAgPct;}
   else{uSelTH=uNet*uSelPct;uAgTH=uNet*uAgPct-uMedia;}
-  const uMarg=uNet/uAsp*100,bMarg=r.netPre/bPrice*100;
-
-  const db=(val,unit)=>{
-    const dir=val>=0?'up':'down',s=val>=0?'+':'';
-    return`<span class="delta-badge ${dir}">${s}${unit==='$'?fmt(val):val.toFixed(1)+'%'}</span>`;
-  };
+  const db=(val,unit)=>{const dir=val>=0?'up':'down',s=val>=0?'+':'';return`<span class="delta-badge ${dir}">${s}${unit==='$'?fmt(val):val.toFixed(1)+'%'}</span>`;};
+  const uNetProfit = unitMediaTiming === 'before' ? uNet - uMedia : uNet;
+  const bNetProfit = bundleMediaTiming === 'before' ? r.netPre - media : r.netPre;
+  const uNetMarg=uNetProfit/uAsp*100, bNetMarg=bNetProfit/bPrice*100;
+  const uAgMarg=uAgTH/uAsp*100, bAgMarg=r.agTH/bPrice*100;
 
   g('b-compare').innerHTML=`
     <div class="compare-card">
       <div class="compare-card-title">Individual (unit tab)</div>
       <div class="compare-row"><span class="compare-row-label">Selling price</span><span class="compare-row-val">$${uAsp.toFixed(2)}</span></div>
       <div class="compare-row"><span class="compare-row-label">Total deductions</span><span class="compare-row-val neg">$${uDed.toFixed(2)}</span></div>
-      <div class="compare-row"><span class="compare-row-label">Net profit</span><span class="compare-row-val ${uNet>=0?'pos':'neg'}">$${uNet.toFixed(2)}</span></div>
+      <div class="compare-row"><span class="compare-row-label">Net profit</span><span class="compare-row-val ${uNetProfit>=0?'pos':'neg'}">$${uNetProfit.toFixed(2)}</span></div>
+      <div class="compare-row"><span class="compare-row-label">Net margin</span><span class="compare-row-val ${uNetMarg>=40?'pos':uNetMarg>=15?'neu':'neg'}">${fmtpct(uNetMarg)}</span></div>
       <div class="compare-divider"></div>
       <div class="compare-row"><span class="compare-row-label">Seller take-home</span><span class="compare-row-val" style="color:var(--blue)">$${uSelTH.toFixed(2)}</span></div>
-      <div class="compare-row"><span class="compare-row-label">Agency take-home</span><span class="compare-row-val" style="color:var(--green)">$${uAgTH.toFixed(2)}</span></div>
-      <div class="compare-row"><span class="compare-row-label">Net margin</span><span class="compare-row-val ${uMarg>=40?'pos':uMarg>=15?'neu':'neg'}">${fmtpct(uMarg)}</span></div>
+      <div class="compare-row"><span class="compare-row-label">Agency profit</span><span class="compare-row-val" style="color:var(--green)">$${uAgTH.toFixed(2)}</span></div>
+      <div class="compare-row"><span class="compare-row-label">Agency margin</span><span class="compare-row-val ${uAgMarg>=40?'pos':uAgMarg>=15?'neu':'neg'}">${fmtpct(uAgMarg)}</span></div>
     </div>
     <div class="compare-card highlight">
       <div class="compare-card-title" style="color:var(--teal)">Bundle (A + B)</div>
       <div class="compare-row"><span class="compare-row-label">Bundle price</span><span class="compare-row-val" style="color:var(--teal)">$${bPrice.toFixed(2)}</span></div>
       <div class="compare-row"><span class="compare-row-label">Total deductions</span><span class="compare-row-val neg">$${r.totalDed.toFixed(2)}</span></div>
-      <div class="compare-row"><span class="compare-row-label">Net profit</span><span class="compare-row-val ${r.netPre>=0?'pos':'neg'}">$${r.netPre.toFixed(2)}</span></div>
+      <div class="compare-row"><span class="compare-row-label">Net profit</span><span class="compare-row-val ${bNetProfit>=0?'pos':'neg'}">$${bNetProfit.toFixed(2)}</span></div>
+      <div class="compare-row"><span class="compare-row-label">Net margin</span><span class="compare-row-val ${bNetMarg>=40?'pos':bNetMarg>=15?'neu':'neg'}">${fmtpct(bNetMarg)}</span></div>
       <div class="compare-divider"></div>
       <div class="compare-row"><span class="compare-row-label">Seller take-home</span><span class="compare-row-val" style="color:var(--blue)">$${r.selTH.toFixed(2)}</span></div>
-      <div class="compare-row"><span class="compare-row-label">Agency take-home</span><span class="compare-row-val" style="color:var(--green)">$${r.agTH.toFixed(2)}</span></div>
-      <div class="compare-row"><span class="compare-row-label">Net margin</span><span class="compare-row-val ${bMarg>=40?'pos':bMarg>=15?'neu':'neg'}">${fmtpct(bMarg)}</span></div>
+      <div class="compare-row"><span class="compare-row-label">Agency profit</span><span class="compare-row-val" style="color:var(--green)">$${r.agTH.toFixed(2)}</span></div>
+      <div class="compare-row"><span class="compare-row-label">Agency margin</span><span class="compare-row-val ${bAgMarg>=40?'pos':bAgMarg>=15?'neu':'neg'}">${fmtpct(bAgMarg)}</span></div>
     </div>
     <div class="compare-card">
       <div class="compare-card-title">Delta</div>
       <div class="compare-row"><span class="compare-row-label">Price</span>${db(bPrice-uAsp,'$')}</div>
       <div class="compare-row"><span class="compare-row-label">Deductions</span>${db(r.totalDed-uDed,'$')}</div>
-      <div class="compare-row"><span class="compare-row-label">Net profit</span>${db(r.netPre-uNet,'$')}</div>
+      <div class="compare-row"><span class="compare-row-label">Net profit</span>${db(bNetProfit-uNetProfit,'$')}</div>
+      <div class="compare-row"><span class="compare-row-label">Net margin</span>${db(bNetMarg-uNetMarg,'%')}</div>
       <div class="compare-divider"></div>
       <div class="compare-row"><span class="compare-row-label">Seller take-home</span>${db(r.selTH-uSelTH,'$')}</div>
-      <div class="compare-row"><span class="compare-row-label">Agency take-home</span>${db(r.agTH-uAgTH,'$')}</div>
-      <div class="compare-row"><span class="compare-row-label">Net margin</span>${db(bMarg-uMarg,'%')}</div>
+      <div class="compare-row"><span class="compare-row-label">Agency profit</span>${db(r.agTH-uAgTH,'$')}</div>
+      <div class="compare-row"><span class="compare-row-label">Agency margin</span>${db(bAgMarg-uAgMarg,'%')}</div>
     </div>`;
 }
 
