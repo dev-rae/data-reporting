@@ -149,7 +149,7 @@ footer p{font-size:11px;color:var(--dim)}
       </div>
       <div class="irow">
         <label>Seller discounts</label>
-        <input type="range" id="u-disc" min="0" max="30" step="1" value="5" oninput="calcUnit()">
+        <input type="range" id="u-disc" min="0" max="100" step="1" value="5" oninput="calcUnit()">
         <span class="val" id="u-disc-v">5%</span>
       </div>
     </div>
@@ -260,7 +260,7 @@ footer p{font-size:11px;color:var(--dim)}
       </div>
       <div class="irow">
         <label>Seller discounts</label>
-        <input type="range" id="b-disc" min="0" max="30" step="1" value="5" oninput="calcBundle()">
+        <input type="range" id="b-disc" min="0" max="100" step="1" value="5" oninput="calcBundle()">
         <span class="val" id="b-disc-v">5%</span>
       </div>
     </div>
@@ -280,14 +280,15 @@ footer p{font-size:11px;color:var(--dim)}
       <div class="card-label">Paid media</div>
       <div class="irow">
         <label>Per-bundle spend</label>
-        <input type="number" id="b-media" min="0" max="200" step="0.01" value="5.00" oninput="calcBundle()" placeholder="0.00">
+        <input type="range" id="b-media" min="0" max="20" step="0.5" value="5" oninput="calcBundle()">
+        <span class="val" id="b-media-v">$5.00</span>
       </div>
       <div style="font-size:12px;color:var(--muted);margin-bottom:8px">Deduct paid media:</div>
       <div class="toggle-group">
         <button class="toggle-btn active" id="b-btn-before" onclick="setBundleMedia('before')">Before split</button>
-        <button class="toggle-btn" id="b-btn-after" onclick="setBundleMedia('after')">After split</button>
+        <button class="toggle-btn" id="b-btn-after" onclick="setBundleMedia('after')">After split (agency)</button>
       </div>
-      <p class="note-text" id="b-media-note"></p>
+      <p class="note-text" id="b-media-note">Paid media deducted from net selling price before split. Both parties share the cost proportionally.</p>
     </div>
     <div class="card" style="border-color:rgba(91,156,246,0.2)">
       <div class="card-label" style="color:var(--blue)">Take-home</div>
@@ -308,6 +309,12 @@ footer p{font-size:11px;color:var(--dim)}
   <div>
     <div style="font-family:'Fraunces',serif;font-size:16px;font-weight:300;margin-bottom:8px">Waterfall — bundle</div>
     <div id="b-waterfall"></div>
+    <div class="metrics-grid" style="grid-template-columns:repeat(4,1fr);margin-top:24px">
+      <div class="metric-card" style="border-color:rgba(107,203,130,0.25)"><div class="metric-card-label" style="color:var(--green)">Agency net profit</div><div class="metric-card-val" id="b-m-ag-profit">—</div><div style="font-size:10px;color:var(--dim);margin-top:4px" id="b-m-ag-profit-sub">after all agency costs</div></div>
+      <div class="metric-card" style="border-color:rgba(107,203,130,0.25)"><div class="metric-card-label" style="color:var(--green)">Agency margin</div><div class="metric-card-val" id="b-m-ag-margin">—</div><div style="font-size:10px;color:var(--dim);margin-top:4px">agency profit / bundle price</div></div>
+      <div class="metric-card" style="border-color:rgba(91,156,246,0.25)"><div class="metric-card-label" style="color:var(--blue)">Seller share</div><div class="metric-card-val" id="b-m-sel-profit">—</div><div style="font-size:10px;color:var(--dim);margin-top:4px">clean — no further costs</div></div>
+      <div class="metric-card" style="border-color:rgba(91,156,246,0.25)"><div class="metric-card-label" style="color:var(--blue)">Seller margin</div><div class="metric-card-val" id="b-m-sel-margin">—</div><div style="font-size:10px;color:var(--dim);margin-top:4px">seller share / bundle price</div></div>
+    </div>
     <div class="wf-section-label" style="margin-top:28px">Bundle vs. individual comparison</div>
     <div class="bundle-compare" id="b-compare"></div>
   </div>
@@ -358,11 +365,7 @@ function wfSplit(label,sub,selAmt,agAmt,maxVal){
 
 function wfSep(label){return`<div class="wf-section-label">${label}</div>`;}
 
-function mTag(m){
-  if(m>=40)return'<span class="tag tag-ok">healthy</span>';
-  if(m>=15)return'<span class="tag tag-warn">thin</span>';
-  return'<span class="tag tag-bad">at risk</span>';
-}
+function mTag(m){ return ''; }
 
 function buildWaterfall(asp,ship,tikPct,affPct,discPct,media,agPct,mediaTiming,labelSub){
   /*
@@ -502,6 +505,9 @@ function setBundleMedia(t){
   bundleMediaTiming=t;
   g('b-btn-before').className='toggle-btn'+(t==='before'?' active':'');
   g('b-btn-after').className='toggle-btn'+(t==='after'?' active':'');
+  g('b-media-note').textContent=t==='before'
+    ?'Paid media deducted from net selling price before split. Both parties share the cost proportionally.'
+    :'Net selling price is split first, then paid media is deducted from agency share only. Seller unaffected.';
   calcBundle();
 }
 
@@ -522,9 +528,13 @@ function calcBundle(){
   g('b-tiktok-v').textContent=(+g('b-tiktok').value).toFixed(1)+'%';
   g('b-aff-v').textContent=(+g('b-aff').value)+'%';
   g('b-disc-v').textContent=(+g('b-disc').value)+'%';
+  g('b-media-v').textContent='$'+media.toFixed(2);
   g('b-agency-v').textContent=Math.round(agPct*100)+'%';
   g('b-seller-pct').textContent=Math.round(selPct*100)+'%';
   g('b-agency-pct').textContent=Math.round(agPct*100)+'%';
+  g('b-media-note').textContent=bundleMediaTiming==='before'
+    ?'Paid media deducted from net selling price before split. Both parties share the cost proportionally.'
+    :'Net selling price is split first, then paid media is deducted from agency share only. Seller unaffected.';
 
   const combined=aspA+aspB;
   const dg=combined>0?((combined-bPrice)/combined)*100:0;
@@ -537,6 +547,19 @@ function calcBundle(){
   g('b-agency-net').textContent=fmt(r.agTH);
   g('b-seller-sub').textContent=Math.round(selPct*100)+'% of net selling price';
   g('b-agency-sub').textContent='after all agency costs';
+
+  // 4 metric cards
+  const bAgProfit=r.agTH, bAgMarginPct=bAgProfit/bPrice*100;
+  const bSelProfit=r.selTH, bSelMarginPct=bSelProfit/bPrice*100;
+  g('b-m-ag-profit').textContent=fmt(bAgProfit);
+  g('b-m-ag-profit').className='metric-card-val '+(bAgProfit>=0?'pos':'neg');
+  g('b-m-ag-margin').innerHTML=fmtpct(bAgMarginPct)+mTag(bAgMarginPct);
+  g('b-m-ag-margin').className='metric-card-val '+(bAgMarginPct>=40?'pos':bAgMarginPct>=15?'neu':'neg');
+  g('b-m-sel-profit').textContent=fmt(bSelProfit);
+  g('b-m-sel-profit').className='metric-card-val '+(bSelProfit>=0?'pos':'neg');
+  g('b-m-sel-margin').innerHTML=fmtpct(bSelMarginPct);
+  g('b-m-sel-margin').className='metric-card-val '+(bSelMarginPct>=40?'pos':bSelMarginPct>=15?'neu':'neg');
+  g('b-m-ag-profit-sub').textContent=bundleMediaTiming==='before'?'media deducted before split':'media deducted from agency share';
 
   /* comparison vs unit tab */
   const uAsp=+g('u-asp').value;
